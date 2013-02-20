@@ -149,15 +149,15 @@ void GeometryProject::subdivide()
 		vertex_mesh[i].isBoundary(vertex_mesh,mesh.num_vertices);
 	}
 
-	for(int i=0; i<mesh.num_vertices; i++)
-	{
-		std::cout<<"\nVertex:"<<i<<": ("<<mesh.vertices[vertex_mesh[i].index].position<<") Boundary:"<<vertex_mesh[i].boundary
-			<<"\nNeighbors: \n";
-		for(int j=0; j<vertex_mesh[i].num_neighbors;j++)
-		{
-			std::cout<<j<<": ("<<mesh.vertices[vertex_mesh[j].index].position<<")\n";
-		}
-	}
+	//for(int i=0; i<mesh.num_vertices; i++)
+	//{
+	//	std::cout<<"\nVertex:"<<i<<": ("<<mesh.vertices[vertex_mesh[i].index].position<<") Boundary:"<<vertex_mesh[i].boundary
+	//		<<"\nNeighbors: \n";
+	//	for(int j=0; j<vertex_mesh[i].num_neighbors;j++)
+	//	{
+	//		std::cout<<j<<": ("<<mesh.vertices[vertex_mesh[i].neighbors[j]].position<<")\n";
+	//	}
+	//}
 
 
 	////find odd vertices
@@ -243,20 +243,86 @@ void LSVertex::initialize(int i, MeshData *mesh)
 	{
 		if(mesh->triangles[k].vertices[0] == index)
 		{
-			neigh[count++] = mesh->triangles[k].vertices[1];
-			neigh[count++] = mesh->triangles[k].vertices[2];
+			bool exists = false;
+			for(int e = 0; e<count; e++)
+			{
+				if(neigh[e] == mesh->triangles[k].vertices[1])
+				{
+					exists = true;
+				}
+			}
+			if(exists == false)
+			{
+				neigh[count++] = mesh->triangles[k].vertices[1];
+			}
+
+			for(int e = 0; e<count; e++)
+			{
+				if(neigh[e] == mesh->triangles[k].vertices[2])
+				{
+					exists = true;
+				}
+			}
+			if(exists == false)
+			{
+				neigh[count++] = mesh->triangles[k].vertices[2];
+			}
 		}
 
 		else if(mesh->triangles[k].vertices[1] == index)
 		{
-			neigh[count++] = mesh->triangles[k].vertices[2];
-			neigh[count++] = mesh->triangles[k].vertices[0];
+			bool exists = false;
+			for(int e = 0; e<count; e++)
+			{
+				if(neigh[e] == mesh->triangles[k].vertices[2])
+				{
+					exists = true;
+				}
+			}
+			if(exists == false)
+			{
+				neigh[count++] = mesh->triangles[k].vertices[2];
+			}
+
+			for(int e = 0; e<count; e++)
+			{
+				if(neigh[e] == mesh->triangles[k].vertices[0])
+				{
+					exists = true;
+				}
+			}
+			if(exists == false)
+			{
+				neigh[count++] = mesh->triangles[k].vertices[0];
+			}
 		}
 
 		else if(mesh->triangles[k].vertices[2] == index)
 		{
-			neigh[count++] = mesh->triangles[k].vertices[0];
-			neigh[count++] = mesh->triangles[k].vertices[1];
+			bool exists = false;
+			for(int e = 0; e<count; e++)
+			{
+				if(neigh[e] == mesh->triangles[k].vertices[0])
+				{
+					exists = true;
+				}
+			}
+			if(exists == false)
+			{
+				neigh[count++] = mesh->triangles[k].vertices[0];
+			}
+
+			for(int e = 0; e<count; e++)
+			{
+				if(neigh[e] == mesh->triangles[k].vertices[1])
+				{
+					exists = true;
+				}
+			}
+			if(exists == false)
+			{
+				neigh[count++] = mesh->triangles[k].vertices[1];
+			}
 		}
 	}
 	//ensure only the required amt of memory is used
