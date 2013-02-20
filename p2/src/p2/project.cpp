@@ -139,6 +139,26 @@ void GeometryProject::render( const Camera* camera )
 void GeometryProject::subdivide()
 {
     // TODO perform a single subdivision.
+	LSVertex *vertex_mesh = new LSVertex[mesh.num_vertices];
+	for(int i=0; i<mesh.num_vertices; i++)
+	{
+		vertex_mesh[i].initialize(i, &mesh);
+	}
+	for(int i=0; i<mesh.num_vertices; i++)
+	{
+		vertex_mesh[i].isBoundary(vertex_mesh,mesh.num_vertices);
+	}
+
+	for(int i=0; i<mesh.num_vertices; i++)
+	{
+		std::cout<<"\nVertex:"<<i<<": ("<<mesh.vertices[vertex_mesh[i].index].position<<") Boundary:"<<vertex_mesh[i].boundary
+			<<"\nNeighbors: \n";
+		for(int j=0; j<vertex_mesh[i].num_neighbors;j++)
+		{
+			std::cout<<j<<": ("<<mesh.vertices[vertex_mesh[j].index].position<<")\n";
+		}
+	}
+
 }
 
 void LSVertex::initialize(int i, MeshData *mesh)
@@ -168,6 +188,50 @@ void LSVertex::initialize(int i, MeshData *mesh)
 		neighbors[i] = neigh[i];
 	}
 	delete[] neigh;
+
+	//initializing odd neighbors
+	num_odd_vertices_calculated = 0;
+	odd_neighbors = new Vertex[num_neighbors];
+
+	//is subdivided or not. true only when odd vertices and even vertices have been calculated
+	isSubdivided = false;
+
+}
+
+void LSVertex::isBoundary(LSVertex *mesh, int count)
+{
+	if(num_neighbors <=2 )
+	{
+		boundary = true;
+	}
+	else
+	{
+		for(int i=0; i<num_neighbors; i++)
+		{
+			int prev = i - 1;
+			if(i == 0)
+			{
+				prev = num_neighbors - 1;
+			}
+			if(mesh[i].isNeighbor(prev) != true)
+			{
+				boundary = true;
+			}
+		}
+		boundary = false;
+	}
+}
+
+bool LSVertex::isNeighbor(int n)
+{
+	for(int i=0; i<num_neighbors; i++)
+	{
+		if(neighbors[i] == n)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 

@@ -61,10 +61,14 @@ public:
 	int num_neighbors;
 	int *neighbors;
 	Vertex *odd_neighbors;
-	Vertex even;
+	int num_odd_vertices_calculated; //when complete, must be equal to the num_neighbors
+	Vertex even_vertex;
 	bool isSubdivided;
-	bool isBoundary;
+	void isBoundary(LSVertex *vertex_mesh, int count); //check if the vertex is a boundary vertex or not
+	bool boundary;	
 	void initialize(int i, MeshData *mesh);
+	bool isNeighbor(int i);
+
 private:
 
 };
