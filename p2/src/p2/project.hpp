@@ -10,6 +10,7 @@
 #define _462_GEOMETRY_PROJECT_HPP_
 
 #include "math/camera.hpp"
+#include "application\imageio.hpp"
 
 
 /*
@@ -49,17 +50,21 @@ struct MeshData
     size_t num_triangles;
 };
 
+
+
 class LSVertex
 {
 public:
 	LSVertex();
 	~LSVertex();
-	unsigned int *neighbors;
+	unsigned int index;
+	int num_neighbors;
+	int *neighbors;
 	Vertex *odd_neighbors;
 	Vertex even;
 	bool isSubdivided;
 	bool isBoundary;
-
+	void initialize(int i, MeshData *mesh);
 private:
 
 };
@@ -69,7 +74,6 @@ private:
 class GeometryProject
 {
 public:
-	unsigned int interiorN, boundaryN;
 	int texwidth, texheight;
     // constructor, invoked when object is created
     GeometryProject();
@@ -88,7 +92,6 @@ public:
     // Subdivide the mesh
     void subdivide();
 
-	void computeNumberOfNeighbors();
 
 private:
 

@@ -36,10 +36,7 @@ GeometryProject::~GeometryProject() { }
 bool GeometryProject::initialize( const Camera* camera, const MeshData* mesh, const char* texture_filename )
 {
     this->mesh = *mesh;
-	computeNumberOfNeighbors();
-
-	std::cout<<"Interior N: "<<this->interiorN<<"Boundary N: "<<this->boundaryN<<"\n";
-
+	
     // TODO opengl initialization code
 
 	static GLuint texName;
@@ -144,26 +141,33 @@ void GeometryProject::subdivide()
     // TODO perform a single subdivision.
 }
 
-void GeometryProject::computeNumberOfNeighbors()
+void LSVertex::initialize(int i, MeshData *mesh)
 {
+	index = i; 
+	this->isSubdivided = false;
+
+	//get neighbor data
 	unsigned int count = 0;
-	interiorN = 0;
-	boundaryN = 0;
-	for(int i=0; i<mesh.num_vertices; i++)
+	//arbitrary size
+	int *neigh = new int[100];
+	for(int k=0; k<mesh->num_triangles; k++)
 	{
-		count = 0;
-		for(int k=0; k<mesh.num_triangles; k++)
+		if(mesh->triangles[k].vertices[0] == index||
+			mesh->triangles[k].vertices[1] == index||
+			mesh->triangles[k].vertices[2] == index)
 		{
-			if(mesh.triangles[k].vertices[0] == i||
-				mesh.triangles[k].vertices[1] == i||
-				mesh.triangles[k].vertices[2] == i)
-			{
-				count++;
-			}
+			neigh[count] = k;
+			count++;
 		}
-		if(interiorN < count) interiorN = count; 
-		if(count < interiorN) boundaryN = count;
 	}
+	//ensure only the required amt of memory is used
+	num_neighbors = count;
+	neighbors = new int[count];
+	for(int i=0; i<count; i++)
+	{
+		neighbors[i] = neigh[i];
+	}
+	delete[] neigh;
 }
 
 
@@ -174,7 +178,6 @@ LSVertex::LSVertex()
 LSVertex::~LSVertex()
 {
 }
-
 
 
 } /* _462 */
