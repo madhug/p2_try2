@@ -33,6 +33,7 @@ struct Vertex
     Vector3 normal;
     // the texture coordinate of the vertex
     Vector2 texture_coord;
+
 };
 
 struct MeshData
@@ -48,42 +49,28 @@ struct MeshData
     size_t num_triangles;
 };
 
-struct LSEdge
-{
-	unsigned int vertices[2];
-	bool isSubdivided;
-	bool isBoundary;
-	Vertex odd_vertex;
-};
-
-
-class LSTriangle
+class LSVertex
 {
 public:
-	LSTriangle(int i, const MeshData* mesh);
-	LSTriangle(){};
-	~LSTriangle();
-
-	bool hasVertex(int i, const MeshData* mesh);
-	bool hasEdge(int u, int v, const MeshData* mesh);
-	bool hasEdge(const LSEdge* edge, const MeshData* mesh);
-	bool hasEdge(const LSEdge* edge, unsigned int triangleIndex, const MeshData* mesh);
+	LSVertex();
+	~LSVertex();
+	unsigned int *neighbors;
+	Vertex *odd_neighbors;
+	Vertex even;
+	bool isSubdivided;
+	bool isBoundary;
 
 private:
-	unsigned int index;
-	unsigned int neighbors[3];
-	bool isSubdivided;
-	LSEdge edges[3];
-	Vertex even_vertex[3];
-};
 
+};
 
 
 
 class GeometryProject
 {
 public:
-
+	unsigned int interiorN, boundaryN;
+	int texwidth, texheight;
     // constructor, invoked when object is created
     GeometryProject();
     // destructor, invoked when object is destroyed
@@ -101,6 +88,7 @@ public:
     // Subdivide the mesh
     void subdivide();
 
+	void computeNumberOfNeighbors();
 
 private:
 

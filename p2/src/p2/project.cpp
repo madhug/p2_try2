@@ -8,7 +8,7 @@
 
 #include "project.hpp"
 #include "application/opengl.hpp"
-
+#include "application\imageio.hpp"
 /*
    A namespace declaration. All project files use this namespace.
    Add this declaration (and its closing) to all source/headers you create.
@@ -36,8 +36,65 @@ GeometryProject::~GeometryProject() { }
 bool GeometryProject::initialize( const Camera* camera, const MeshData* mesh, const char* texture_filename )
 {
     this->mesh = *mesh;
+	computeNumberOfNeighbors();
+
+	std::cout<<"Interior N: "<<this->interiorN<<"Boundary N: "<<this->boundaryN<<"\n";
 
     // TODO opengl initialization code
+
+	static GLuint texName;
+
+	GLfloat light_ambient[] = { 0.3, 0.3, 0.3, 1.0 };
+    GLfloat light_diffuse[] = { 0.6, 0.6, 0.6, 1.0 };
+    GLfloat light_specular[] = { 0.6, 0.6, 0.6, 1.0 };
+    GLfloat light_position[] = { 1.0, 100.0, 1.0, 1.0 };
+	GLfloat mat_shininess[] = { 50.0 };
+
+	glShadeModel(GL_SMOOTH);
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+
+	glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_DEPTH_TEST);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glEnable(GL_NORMALIZE);
+	glEnable(GL_COLOR_MATERIAL);
+
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	
+	gluPerspective(camera->get_fov_degrees(),camera->get_aspect_ratio(),camera->get_near_clip(), camera->get_far_clip());	
+
+    // TODO opengl initialization code
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glEnable(GL_TEXTURE_2D);
+
+	if(texture_filename != NULL)
+	{
+		unsigned char* texdata = imageio_load_image( texture_filename, &texwidth, &texheight );
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glGenTextures(1, &texName);
+		glBindTexture(GL_TEXTURE_2D, texName);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texwidth, texheight, 0, GL_RGBA, GL_UNSIGNED_BYTE,texdata);
+	}
+
+
+    return true;
+
     return true;
 }
 
@@ -57,6 +114,25 @@ void GeometryProject::destroy()
 void GeometryProject::render( const Camera* camera )
 {
   // TODO render code
+	Vector3 pos = camera->get_position();
+	Vector3 dir = camera->get_direction() + camera->get_position();
+	Vector3 up = camera->get_up();
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	gluLookAt(pos.x, pos.y, pos.z, dir.x, dir.y, dir.z, up.x, up.y, up.z);
+
+    glEnableClientState( GL_VERTEX_ARRAY ); 
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glVertexPointer( 3, GL_DOUBLE, 8*sizeof(double), mesh.vertices);
+	glNormalPointer(GL_DOUBLE, 8*sizeof(double), &(mesh.vertices[0].normal));
+	glColor3f(1.0, 0, 0);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glTexCoordPointer(2, GL_DOUBLE,  8*sizeof(double), &(mesh.vertices[0].texture_coord));
+	glDrawElements(GL_TRIANGLES, mesh.num_triangles*3 , GL_UNSIGNED_INT, mesh.triangles);
+	glDisableClientState( GL_VERTEX_ARRAY ); 
+	glDisableClientState(GL_NORMAL_ARRAY);
 }
 
 
@@ -66,166 +142,39 @@ void GeometryProject::render( const Camera* camera )
 void GeometryProject::subdivide()
 {
     // TODO perform a single subdivision.
-
-	LSTriangle* ls_triangles = new LSTriangle[this->mesh.num_triangles];
-	
-	for(int i=0; i<mesh.num_triangles; i++)
-	{
-
-	}
-	
-
 }
 
-LSTriangle::LSTriangle(int i, const MeshData* mesh)
+void GeometryProject::computeNumberOfNeighbors()
 {
-	index = i;
-	isSubdivided = false;
-
-	//setting the edges
-	edges[0].vertices[0] = mesh->triangles[i].vertices[0];
-	edges[0].vertices[1] = mesh->triangles[i].vertices[1];
-	edges[0].isSubdivided = false;
-	edges[0].isBoundary = false;
-	
-	edges[1].vertices[0] = mesh->triangles[i].vertices[1];
-	edges[1].vertices[1] = mesh->triangles[i].vertices[2];
-	edges[1].isSubdivided = false;
-	edges[1].isBoundary = false;
-
-	edges[2].vertices[0] = mesh->triangles[i].vertices[2];
-	edges[2].vertices[1] = mesh->triangles[i].vertices[0];
-	edges[2].isSubdivided = false;
-	edges[2].isBoundary = false;
-	
-	//setting neighbours
-	neighbors[0] = neighbors[1] = neighbors[2] = -1;
-	
-	for(int j=0; j<3; j++)
+	unsigned int count = 0;
+	interiorN = 0;
+	boundaryN = 0;
+	for(int i=0; i<mesh.num_vertices; i++)
 	{
-		if(hasEdge(&edges[j],index+j+1,mesh))
+		count = 0;
+		for(int k=0; k<mesh.num_triangles; k++)
 		{
-			if(neighbors[j] == -1)
+			if(mesh.triangles[k].vertices[0] == i||
+				mesh.triangles[k].vertices[1] == i||
+				mesh.triangles[k].vertices[2] == i)
 			{
-				neighbors[j] = index+j+1;
+				count++;
 			}
 		}
+		if(interiorN < count) interiorN = count; 
+		if(count < interiorN) boundaryN = count;
 	}
-	
-	if(neighbors[0] == -1)
-	{
-		for(int j=-3; j<0; j++)
-		{
-			if(hasEdge(&edges[j],index+j,mesh))
-			{
-				neighbors[0] = index+j;
-			}
-		}
-		if(neighbors[0] == -1)
-		{
-			edges[0].isBoundary = true;
-		}
-	}
-
-	if(neighbors[1] == -1)
-	{
-		for(int j=-3; j<0; j++)
-		{
-			if(hasEdge(&edges[j],index+j,mesh))
-			{
-				neighbors[1] = index+j;
-			}
-		}
-		if(neighbors[1] == -1)
-		{
-			edges[1].isBoundary = true;
-		}
-	}
-
-	if(neighbors[2] == -1)
-	{
-		for(int j=-3; j<0; j++)
-		{
-			if(hasEdge(&edges[j],index+j,mesh))
-			{
-				neighbors[2] = index+j;
-			}
-		}
-		if(neighbors[2] == -1)
-		{
-			edges[2].isBoundary = true;
-		}
-	}
-
 }
 
-LSTriangle::~LSTriangle()
+
+LSVertex::LSVertex()
 {
-
 }
 
-bool LSTriangle::hasVertex(int i, const MeshData* mesh)
+LSVertex::~LSVertex()
 {
-	if(mesh->triangles[index].vertices[0] == i
-		|| mesh->triangles[index].vertices[1] == i
-		|| mesh->triangles[index].vertices[2] == i)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
 }
 
-bool LSTriangle::hasEdge(int u, int v, const MeshData* mesh)
-{
-	if(this->hasVertex(u,mesh) && this->hasVertex(v,mesh))
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool LSTriangle::hasEdge(const LSEdge* edge, const MeshData* mesh)
-{
-	if(this->hasEdge(edge->vertices[0], edge->vertices[1],mesh))
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool LSTriangle::hasEdge(const LSEdge* edge, unsigned int i, const MeshData* mesh)
-{
-	bool hasV1=false, hasV2=false;
-	if(mesh->triangles[i].vertices[0] == edge->vertices[0]
-	||mesh->triangles[i].vertices[1] == edge->vertices[0]
-	||mesh->triangles[i].vertices[2] == edge->vertices[0])
-	{
-		hasV1 = true;
-	}
-	if(mesh->triangles[i].vertices[0] == edge->vertices[1]
-	||mesh->triangles[i].vertices[1] == edge->vertices[2]
-	||mesh->triangles[i].vertices[2] == edge->vertices[3])
-	{
-		hasV2 = true;
-	}
-	if(hasV1 && hasV2)
-	{
-		return true;
-	}
-	else
-	{
-		return false; 
-	}
-}
 
 
 } /* _462 */
