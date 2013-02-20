@@ -58,9 +58,9 @@ public:
 	LSVertex();
 	~LSVertex();
 	unsigned int index;
-	int num_neighbors;
-	int *neighbors;
-	Vertex *odd_neighbors;
+	int num_neighbors;//indexes into mesh.vertices array
+	int *neighbors; //indexes into mesh.vertices array
+	Vertex *odd_neighbors; //array of actual Vertex (x,y,z) struct type
 	int num_odd_vertices_calculated; //when complete, must be equal to the num_neighbors
 	Vertex even_vertex;
 	bool isSubdivided;

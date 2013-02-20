@@ -139,7 +139,8 @@ void GeometryProject::render( const Camera* camera )
 void GeometryProject::subdivide()
 {
     // TODO perform a single subdivision.
-	LSVertex *vertex_mesh = new LSVertex[mesh.num_vertices];
+
+	LSVertex *vertex_mesh = new LSVertex[mesh.num_vertices]; //the indices correspond to mesh.vertices indices
 	for(int i=0; i<mesh.num_vertices; i++)
 	{
 		vertex_mesh[i].initialize(i, &mesh);
@@ -160,70 +161,89 @@ void GeometryProject::subdivide()
 	//}
 
 
-	////find odd vertices
-	//for(int i=0; i<mesh.num_vertices; i++)
-	//{
-	//	if(vertex_mesh[i].boundary == true)
-	//	{
-	//		for(int j=0; j<vertex_mesh[i].num_neighbors; j++)
-	//		{
-	//			//calculate position
-	//			vertex_mesh[i].odd_neighbors[j].position = 0.5 * (mesh.vertices[vertex_mesh[i].index].position + 
-	//				mesh.vertices[vertex_mesh[i].neighbors[j]].position);
+	//find odd vertices
+	for(int i=0; i<mesh.num_vertices; i++)
+	{
+		if(vertex_mesh[i].isSubdivided == false)
+		{
+			if(vertex_mesh[i].boundary == true)
+			{
+				for(int j=0; j<vertex_mesh[i].num_neighbors; j++)
+				{
+					if(vertex_mesh[vertex_mesh[i].neighbors[j]].isSubdivided == false)
+					{
+					//calculate position
+						vertex_mesh[i].odd_neighbors[j].position = 0.5 * (mesh.vertices[vertex_mesh[i].index].position + 
+							mesh.vertices[vertex_mesh[i].neighbors[j]].position);
 
-	//			//calculate normals
-	//			vertex_mesh[i].odd_neighbors[j].normal = 0.5 * (mesh.vertices[vertex_mesh[i].index].normal + 
-	//				mesh.vertices[vertex_mesh[i].neighbors[j]].normal);
-	//			vertex_mesh[i].odd_neighbors[j].normal = normalize(vertex_mesh[i].odd_neighbors[j].normal);
+						//calculate normals
+						vertex_mesh[i].odd_neighbors[j].normal = 0.5 * (mesh.vertices[vertex_mesh[i].index].normal + 
+							mesh.vertices[vertex_mesh[i].neighbors[j]].normal);
+						vertex_mesh[i].odd_neighbors[j].normal = normalize(vertex_mesh[i].odd_neighbors[j].normal);
 
-	//			//calculate texture coordinates
-	//			vertex_mesh[i].odd_neighbors[j].texture_coord = 0.5 * (mesh.vertices[vertex_mesh[i].index].texture_coord + 
-	//				mesh.vertices[vertex_mesh[i].neighbors[j]].texture_coord);
-	//		}
-	//	}
-	//	else
-	//	{
-	//		for(int j=0; j<vertex_mesh[i].num_neighbors; j++)
-	//		{
-	//			//finding the a, b, c and d vertices to perform the weighted average
-	//			// a is the current vertex
-	//			// b is the neighbor
-	//			// c is the prev neighbor
-	//			// d is the next neighbor
+						//calculate texture coordinates
+						vertex_mesh[i].odd_neighbors[j].texture_coord = 0.5 * (mesh.vertices[vertex_mesh[i].index].texture_coord + 
+							mesh.vertices[vertex_mesh[i].neighbors[j]].texture_coord);
+					}
+					else
+					{
+						//find out the index of the neighbor array of the neighbor[j] that holds the value of vertex_mesh[i].index
+						for(int k=0; k<vertex_mesh[vertex_mesh[i].neighbors[j]].num_neighbors;k++)
+						{
+							if(vertex_mesh[vertex_mesh[i].neighbors[j]].neighbors[k] == vertex_mesh[i].index)
+							{
+								vertex_mesh[i].odd_neighbors[j] = 
+									vertex_mesh[i].neighbors[vertex_mesh[vertex_mesh[i].neighbors[j]].odd_neighbors[k]];
+							}
+						}
+					}
+				}
+				vertex_mesh[i].isSubdivided = true;
+			}
+			else
+			{
+				for(int j=0; j<vertex_mesh[i].num_neighbors; j++)
+				{
+					//finding the a, b, c and d vertices to perform the weighted average
+					// a is the current vertex
+					// b is the neighbor
+					// c is the prev neighbor
+					// d is the next neighbor
 
-	//			int prev = j - 1;
-	//			if(j == 0)
-	//			{
-	//				prev = vertex_mesh[i].num_neighbors - 1;
-	//			}
+					int prev = j - 1;
+					if(j == 0)
+					{
+						prev = vertex_mesh[i].num_neighbors - 1;
+					}
 
-	//			int next = j + 1;
-	//			if(j == vertex_mesh[i].num_neighbors - 1)
-	//			{
-	//				next = 0;
-	//			}
+					int next = j + 1;
+					if(j == vertex_mesh[i].num_neighbors - 1)
+					{
+						next = 0;
+					}
 
-	//			//calculate position
-	//			vertex_mesh[i].odd_neighbors[j].position = 0.375 * mesh.vertices[vertex_mesh[i].index].position 
-	//				+ 0.375 * mesh.vertices[vertex_mesh[i].neighbors[j]].position
-	//				+ 0.125 * mesh.vertices[prev].position
-	//				+ 0.125 * mesh.vertices[next].position;
+					//calculate position
+					vertex_mesh[i].odd_neighbors[j].position = 0.375 * mesh.vertices[vertex_mesh[i].index].position 
+						+ 0.375 * mesh.vertices[vertex_mesh[i].neighbors[j]].position
+						+ 0.125 * mesh.vertices[prev].position
+						+ 0.125 * mesh.vertices[next].position;
 
-	//			//calculate normals
-	//			vertex_mesh[i].odd_neighbors[j].normal = 0.375 * mesh.vertices[vertex_mesh[i].index].normal 
-	//				+ 0.375 * mesh.vertices[vertex_mesh[i].neighbors[j]].normal
-	//				+ 0.125 * mesh.vertices[prev].normal
-	//				+ 0.125 * mesh.vertices[next].normal;
-	//			vertex_mesh[i].odd_neighbors[j].normal = normalize(vertex_mesh[i].odd_neighbors[j].normal);
+					//calculate normals
+					vertex_mesh[i].odd_neighbors[j].normal = 0.375 * mesh.vertices[vertex_mesh[i].index].normal 
+						+ 0.375 * mesh.vertices[vertex_mesh[i].neighbors[j]].normal
+						+ 0.125 * mesh.vertices[prev].normal
+						+ 0.125 * mesh.vertices[next].normal;
+					vertex_mesh[i].odd_neighbors[j].normal = normalize(vertex_mesh[i].odd_neighbors[j].normal);
 
-	//			//calculate texture coordinates
-	//			vertex_mesh[i].odd_neighbors[j].texture_coord = 0.375 * mesh.vertices[vertex_mesh[i].index].texture_coord 
-	//				+ 0.375 * mesh.vertices[vertex_mesh[i].neighbors[j]].texture_coord
-	//				+ 0.125 * mesh.vertices[prev].texture_coord
-	//				+ 0.125 * mesh.vertices[next].texture_coord;
-	//		}
-	//	}
-	//}
+					//calculate texture coordinates
+					vertex_mesh[i].odd_neighbors[j].texture_coord = 0.375 * mesh.vertices[vertex_mesh[i].index].texture_coord 
+						+ 0.375 * mesh.vertices[vertex_mesh[i].neighbors[j]].texture_coord
+						+ 0.125 * mesh.vertices[prev].texture_coord
+						+ 0.125 * mesh.vertices[next].texture_coord;
+				}
+			}
+		}
+	}
 
 	//find even vertices
 
